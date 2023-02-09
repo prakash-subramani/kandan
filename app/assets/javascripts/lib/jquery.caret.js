@@ -1,4 +1,3 @@
-
 /*
   Implement Github like autocomplete mentions
   http://ichord.github.com/At.js
@@ -7,27 +6,24 @@
   Licensed under the MIT license.
 */
 
-
 /*
 本插件操作 textarea 或者 input 内的插入符
 只实现了获得插入符在文本框中的位置，我设置
 插入符的位置.
 */
 
-
-(function() {
-
-  (function(factory) {
-    if (typeof exports === 'object') {
-      return factory(require('jquery'));
-    } else if (typeof define === 'function' && define.amd) {
-      return define(['jquery']);
+(function () {
+  (function (factory) {
+    if (typeof exports === "object") {
+      return factory(require("jquery"));
+    } else if (typeof define === "function" && define.amd) {
+      return define(["jquery"]);
     } else {
       return factory(window.jQuery);
     }
-  })(function($) {
+  })(function ($) {
     var getCaretPos, setCaretPos;
-    getCaretPos = function(inputor) {
+    getCaretPos = function (inputor) {
       var end, endRange, len, normalizedValue, pos, range, start, textInputRange;
       if (document.selection) {
         /*
@@ -103,7 +99,7 @@
       }
       return start;
     };
-    setCaretPos = function(inputor, pos) {
+    setCaretPos = function (inputor, pos) {
       var range;
       if (document.selection) {
         range = inputor.createTextRange();
@@ -113,7 +109,7 @@
         return inputor.setSelectionRange(pos, pos);
       }
     };
-    return $.fn.caretPos = function(pos) {
+    return ($.fn.caretPos = function (pos) {
       var inputor;
       inputor = this[0];
       inputor.focus();
@@ -122,7 +118,6 @@
       } else {
         return getCaretPos(inputor);
       }
-    };
+    });
   });
-
-}).call(this);
+}.call(this));

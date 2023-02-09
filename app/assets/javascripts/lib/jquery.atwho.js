@@ -1,4 +1,3 @@
-
 /*
   Implement Github like autocomplete mentions
   http://ichord.github.com/At.js
@@ -7,89 +6,105 @@
   Licensed under the MIT license.
 */
 
-
-(function() {
-
-  (function(factory) {
-    if (typeof define === 'function' && define.amd) {
-      return define(['jquery'], factory);
+(function () {
+  (function (factory) {
+    if (typeof define === "function" && define.amd) {
+      return define(["jquery"], factory);
     } else {
       return factory(window.jQuery);
     }
-  })(function($) {
+  })(function ($) {
     var Controller, DEFAULT_CALLBACKS, DEFAULT_TPL, KEY_CODE, Mirror, View;
-    Mirror = (function() {
-
-      Mirror.prototype.css_attr = ["overflowY", "height", "width", "paddingTop", "paddingLeft", "paddingRight", "paddingBottom", "marginTop", "marginLeft", "marginRight", "marginBottom", "fontFamily", "borderStyle", "borderWidth", "wordWrap", "fontSize", "lineHeight", "overflowX", "text-align"];
+    Mirror = (function () {
+      Mirror.prototype.css_attr = [
+        "overflowY",
+        "height",
+        "width",
+        "paddingTop",
+        "paddingLeft",
+        "paddingRight",
+        "paddingBottom",
+        "marginTop",
+        "marginLeft",
+        "marginRight",
+        "marginBottom",
+        "fontFamily",
+        "borderStyle",
+        "borderWidth",
+        "wordWrap",
+        "fontSize",
+        "lineHeight",
+        "overflowX",
+        "text-align",
+      ];
 
       function Mirror($inputor) {
         this.$inputor = $inputor;
       }
 
-      Mirror.prototype.copy_inputor_css = function() {
+      Mirror.prototype.copy_inputor_css = function () {
         var css,
           _this = this;
         css = {
-          position: 'absolute',
+          position: "absolute",
           left: -9999,
           top: 0,
           zIndex: -20000,
-          'white-space': 'pre-wrap'
+          "white-space": "pre-wrap",
         };
-        $.each(this.css_attr, function(i, p) {
-          return css[p] = _this.$inputor.css(p);
+        $.each(this.css_attr, function (i, p) {
+          return (css[p] = _this.$inputor.css(p));
         });
         return css;
       };
 
-      Mirror.prototype.create = function(html) {
-        this.$mirror = $('<div></div>');
+      Mirror.prototype.create = function (html) {
+        this.$mirror = $("<div></div>");
         this.$mirror.css(this.copy_inputor_css());
         this.$mirror.html(html);
         this.$inputor.after(this.$mirror);
         return this;
       };
 
-      Mirror.prototype.get_flag_rect = function() {
+      Mirror.prototype.get_flag_rect = function () {
         var $flag, pos, rect;
         $flag = this.$mirror.find("span#flag");
         pos = $flag.position();
         rect = {
           left: pos.left,
           top: pos.top,
-          bottom: $flag.height() + pos.top
+          bottom: $flag.height() + pos.top,
         };
         this.$mirror.remove();
         return rect;
       };
 
       return Mirror;
-
     })();
     KEY_CODE = {
       DOWN: 40,
       UP: 38,
       ESC: 27,
       TAB: 9,
-      ENTER: 13
+      ENTER: 13,
     };
     DEFAULT_CALLBACKS = {
-      data_refactor: function(data) {
+      data_refactor: function (data) {
         if (!$.isArray(data)) {
           return data;
         }
-        return $.map(data, function(item, k) {
+        return $.map(data, function (item, k) {
           if (!$.isPlainObject(item)) {
             item = {
-              name: item
+              name: item,
             };
           }
           return item;
         });
       },
-      matcher: function(flag, subtext) {
+      matcher: function (flag, subtext) {
         var match, matched, regexp;
-        regexp = new RegExp(flag + '([A-Za-z0-9_\+\-]*)$|' + flag + '([^\\x00-\\xff]*)$', 'gi');
+        regexp = new RegExp(flag + "([A-Za-z0-9_+-]*)$|" + flag + "([^\\x00-\\xff]*)$", "gi");
         match = regexp.exec(subtext);
         matched = null;
         if (match) {
@@ -97,9 +112,9 @@
         }
         return matched;
       },
-      filter: function(query, data, search_key) {
+      filter: function (query, data, search_key) {
         var _this = this;
-        return $.map(data, function(item, i) {
+        return $.map(data, function (item, i) {
           var name;
           name = $.isPlainObject(item) ? item[search_key] : item;
           if (name.toLowerCase().indexOf(query) >= 0) {
@@ -107,18 +122,18 @@
           }
         });
       },
-      remote_filter: function(params, url, render_view) {
+      remote_filter: function (params, url, render_view) {
         return $.ajax(url, {
           data: params,
-          success: function(data) {
+          success: function (data) {
             return render_view(data);
-          }
+          },
         });
       },
-      sorter: function(query, items, search_key) {
+      sorter: function (query, items, search_key) {
         var item, results, text, _i, _len;
         if (!query) {
-          return items.sort(function(a, b) {
+          return items.sort(function (a, b) {
             if (a[search_key].toLowerCase() > b[search_key].toLowerCase()) {
               return 1;
             } else {
@@ -133,36 +148,38 @@
           item.order = text.toLowerCase().indexOf(query);
           results.push(item);
         }
-        return results.sort(function(a, b) {
+        return results.sort(function (a, b) {
           return a.order - b.order;
         });
       },
-      tpl_eval: function(tpl, map) {
+      tpl_eval: function (tpl, map) {
         var el;
         try {
-          return el = tpl.replace(/\$\{([^\}]*)\}/g, function(tag, key, pos) {
+          return (el = tpl.replace(/\$\{([^\}]*)\}/g, function (tag, key, pos) {
             return map[key];
-          });
+          }));
         } catch (error) {
           return "";
         }
       },
-      highlighter: function(li, query) {
+      highlighter: function (li, query) {
         if (!query) {
           return li;
         }
-        return li.replace(new RegExp(">\\s*(\\w*)(" + query.replace("+", "\\+") + ")(\\w*)\\s*<", 'ig'), function(str, $1, $2, $3) {
-          return '> ' + $1 + '<strong>' + $2 + '</strong>' + $3 + ' <';
-        });
+        return li.replace(
+          new RegExp(">\\s*(\\w*)(" + query.replace("+", "\\+") + ")(\\w*)\\s*<", "ig"),
+          function (str, $1, $2, $3) {
+            return "> " + $1 + "<strong>" + $2 + "</strong>" + $3 + " <";
+          }
+        );
       },
-      selector: function($li) {
+      selector: function ($li) {
         if ($li.length > 0) {
           return this.replace_str($li.data("value") || "");
         }
-      }
+      },
     };
-    Controller = (function() {
-
+    Controller = (function () {
       function Controller(inputor) {
         this.settings = {};
         this.common_settings = {};
@@ -177,39 +194,47 @@
         this.listen();
       }
 
-      Controller.prototype.listen = function() {
+      Controller.prototype.listen = function () {
         var _this = this;
-        return this.$inputor.on('keyup.atwho', function(e) {
-          return _this.on_keyup(e);
-        }).on('keydown.atwho', function(e) {
-          return _this.on_keydown(e);
-        }).on('scroll.atwho', function(e) {
-          return _this.view.hide();
-        }).on('blur.atwho', function(e) {
-          return _this.view.hide(_this.get_opt("display_timeout"));
-        });
+        return this.$inputor
+          .on("keyup.atwho", function (e) {
+            return _this.on_keyup(e);
+          })
+          .on("keydown.atwho", function (e) {
+            return _this.on_keydown(e);
+          })
+          .on("scroll.atwho", function (e) {
+            return _this.view.hide();
+          })
+          .on("blur.atwho", function (e) {
+            return _this.view.hide(_this.get_opt("display_timeout"));
+          });
       };
 
-      Controller.prototype.reg = function(flag, settings) {
+      Controller.prototype.reg = function (flag, settings) {
         var current_settings, data;
         current_settings = {};
-        current_settings = $.isPlainObject(flag) ? this.common_settings = $.extend({}, this.common_settings, flag) : !this.settings[flag] ? this.settings[flag] = $.extend({}, settings) : this.settings[flag] = $.extend({}, this.settings[flag], settings);
+        current_settings = $.isPlainObject(flag)
+          ? (this.common_settings = $.extend({}, this.common_settings, flag))
+          : !this.settings[flag]
+          ? (this.settings[flag] = $.extend({}, settings))
+          : (this.settings[flag] = $.extend({}, this.settings[flag], settings));
         data = current_settings["data"];
         current_settings["data"] = this.callbacks("data_refactor").call(this, data);
         return this;
       };
 
-      Controller.prototype.trigger = function(name, data) {
+      Controller.prototype.trigger = function (name, data) {
         data || (data = []);
         data.push(this);
         return this.$inputor.trigger("" + name + ".atwho", data);
       };
 
-      Controller.prototype.data = function() {
+      Controller.prototype.data = function () {
         return this.get_opt("data");
       };
 
-      Controller.prototype.callbacks = function(func_name) {
+      Controller.prototype.callbacks = function (func_name) {
         var func;
         if (!(func = this.get_opt("callbacks", {})[func_name])) {
           func = this.common_settings["callbacks"][func_name];
@@ -217,7 +242,7 @@
         return func;
       };
 
-      Controller.prototype.get_opt = function(key, default_value) {
+      Controller.prototype.get_opt = function (key, default_value) {
         var value;
         try {
           if (this.current_flag) {
@@ -226,13 +251,13 @@
           if (value === void 0) {
             value = this.common_settings[key];
           }
-          return value = value === void 0 ? default_value : value;
+          return (value = value === void 0 ? default_value : value);
         } catch (e) {
-          return value = default_value === void 0 ? null : default_value;
+          return (value = default_value === void 0 ? null : default_value);
         }
       };
 
-      Controller.prototype.rect = function() {
+      Controller.prototype.rect = function () {
         var $inputor, Sel, at_rect, bottom, format, html, offset, start_range, x, y;
         $inputor = this.$inputor;
         if (document.selection) {
@@ -243,11 +268,16 @@
           return {
             top: y - 2,
             left: x - 2,
-            bottom: bottom - 2
+            bottom: bottom - 2,
           };
         }
-        format = function(value) {
-          return value.replace(/</g, '&lt').replace(/>/g, '&gt').replace(/`/g, '&#96').replace(/"/g, '&quot').replace(/\r\n|\r|\n/g, "<br />");
+        format = function (value) {
+          return value
+            .replace(/</g, "&lt")
+            .replace(/>/g, "&gt")
+            .replace(/`/g, "&#96")
+            .replace(/"/g, "&quot")
+            .replace(/\r\n|\r|\n/g, "<br />");
         };
         /* 克隆完inputor后将原来的文本内容根据
           @的位置进行分块,以获取@块在inputor(输入框)里的position
@@ -272,22 +302,27 @@
         return {
           top: y,
           left: x,
-          bottom: bottom + 2
+          bottom: bottom + 2,
         };
       };
 
-      Controller.prototype.catch_query = function() {
-        var caret_pos, content, end, query, start, subtext,
+      Controller.prototype.catch_query = function () {
+        var caret_pos,
+          content,
+          end,
+          query,
+          start,
+          subtext,
           _this = this;
         content = this.$inputor.val();
         caret_pos = this.$inputor.caretPos();
         /* 向在插入符前的的文本进行正则匹配
          * 考虑会有多个 @ 的存在, 匹配离插入符最近的一个
-        */
+         */
 
         subtext = content.slice(0, caret_pos);
         query = null;
-        $.each(this.settings, function(flag, settings) {
+        $.each(this.settings, function (flag, settings) {
           query = _this.callbacks("matcher").call(_this, flag, subtext);
           if (query != null) {
             _this.current_flag = flag;
@@ -299,30 +334,30 @@
           end = start + query.length;
           this.pos = start;
           query = {
-            'text': query.toLowerCase(),
-            'head_pos': start,
-            'end_pos': end
+            text: query.toLowerCase(),
+            head_pos: start,
+            end_pos: end,
           };
           this.trigger("matched", [this.current_flag, query.text]);
         } else {
           this.view.hide();
         }
-        return this.query = query;
+        return (this.query = query);
       };
 
-      Controller.prototype.replace_str = function(str) {
+      Controller.prototype.replace_str = function (str) {
         var $inputor, flag_len, source, start_str, text;
         $inputor = this.$inputor;
         source = $inputor.val();
         flag_len = this.get_opt("display_flag") ? 0 : this.current_flag.length;
-        start_str = source.slice(0, (this.query['head_pos'] || 0) - flag_len);
-        text = "" + start_str + str + " " + (source.slice(this.query['end_pos'] || 0));
+        start_str = source.slice(0, (this.query["head_pos"] || 0) - flag_len);
+        text = "" + start_str + str + " " + source.slice(this.query["end_pos"] || 0);
         $inputor.val(text);
         $inputor.caretPos(start_str.length + str.length + 1);
         return $inputor.change();
       };
 
-      Controller.prototype.on_keyup = function(e) {
+      Controller.prototype.on_keyup = function (e) {
         switch (e.keyCode) {
           case KEY_CODE.ESC:
             e.preventDefault();
@@ -338,7 +373,7 @@
         return e.stopPropagation();
       };
 
-      Controller.prototype.on_keydown = function(e) {
+      Controller.prototype.on_keydown = function (e) {
         if (!this.view.visible()) {
           return;
         }
@@ -369,31 +404,31 @@
         return e.stopPropagation();
       };
 
-      Controller.prototype.render_view = function(data) {
+      Controller.prototype.render_view = function (data) {
         var search_key;
         search_key = this.get_opt("search_key");
         data = this.callbacks("sorter").call(this, this.query.text, data, search_key);
-        data = data.splice(0, this.get_opt('limit'));
+        data = data.splice(0, this.get_opt("limit"));
         return this.view.render(data);
       };
 
-      Controller.prototype.remote_call = function(data, query) {
+      Controller.prototype.remote_call = function (data, query) {
         var params, _callback;
         params = {
           q: query.text,
-          limit: this.get_opt("limit")
+          limit: this.get_opt("limit"),
         };
-        _callback = function(data) {
+        _callback = function (data) {
           this.reg(this.current_flag, {
-            data: data
+            data: data,
           });
           return this.render_view(this.data());
         };
         _callback = $.proxy(_callback, this);
-        return this.callbacks('remote_filter').call(this, params, data, _callback);
+        return this.callbacks("remote_filter").call(this, params, data, _callback);
       };
 
-      Controller.prototype.look_up = function() {
+      Controller.prototype.look_up = function () {
         var data, query, search_key;
         query = this.catch_query();
         if (!query) {
@@ -403,7 +438,7 @@
         search_key = this.get_opt("search_key");
         if (typeof data === "string") {
           this.remote_call(data, query);
-        } else if ((data = this.callbacks('filter').call(this, query.text, data, search_key))) {
+        } else if ((data = this.callbacks("filter").call(this, query.text, data, search_key))) {
           this.render_view(data);
         } else {
           this.view.hide();
@@ -412,10 +447,8 @@
       };
 
       return Controller;
-
     })();
-    View = (function() {
-
+    View = (function () {
       function View(controller) {
         this.controller = controller;
         this.id = this.controller.get_opt("view_id", "at-view");
@@ -424,8 +457,9 @@
         this.create_view();
       }
 
-      View.prototype.create_view = function() {
-        var $menu, tpl,
+      View.prototype.create_view = function () {
+        var $menu,
+          tpl,
           _this = this;
         if (this.exist()) {
           return;
@@ -433,26 +467,28 @@
         tpl = "<div id='" + this.id + "' class='at-view'><ul id='" + this.id + "-ul'></ul></div>";
         $("body").append(tpl);
         this.$el = $("#" + this.id);
-        $menu = this.$el.find('ul');
-        return $menu.on('mouseenter.view', 'li', function(e) {
-          $menu.find('.cur').removeClass('cur');
-          return $(e.currentTarget).addClass('cur');
-        }).on('click', function(e) {
-          e.stopPropagation();
-          e.preventDefault();
-          return _this.$el.data("_view").choose();
-        });
+        $menu = this.$el.find("ul");
+        return $menu
+          .on("mouseenter.view", "li", function (e) {
+            $menu.find(".cur").removeClass("cur");
+            return $(e.currentTarget).addClass("cur");
+          })
+          .on("click", function (e) {
+            e.stopPropagation();
+            e.preventDefault();
+            return _this.$el.data("_view").choose();
+          });
       };
 
-      View.prototype.exist = function() {
+      View.prototype.exist = function () {
         return $("#" + this.id).length > 0;
       };
 
-      View.prototype.visible = function() {
+      View.prototype.visible = function () {
         return this.$el.is(":visible");
       };
 
-      View.prototype.choose = function() {
+      View.prototype.choose = function () {
         var $li;
         $li = this.$el.find(".cur");
         this.controller.callbacks("selector").call(this.controller, $li);
@@ -460,7 +496,7 @@
         return this.hide();
       };
 
-      View.prototype.reposition = function() {
+      View.prototype.reposition = function () {
         var offset, rect;
         rect = this.controller.rect();
         if (rect.bottom + this.$el.height() - $(window).scrollTop() > $(window).height()) {
@@ -468,40 +504,40 @@
         }
         offset = {
           left: rect.left,
-          top: rect.bottom
+          top: rect.bottom,
         };
         this.$el.offset(offset);
         return this.controller.trigger("reposition", [offset]);
       };
 
-      View.prototype.next = function() {
+      View.prototype.next = function () {
         var cur, next;
-        cur = this.$el.find('.cur').removeClass('cur');
+        cur = this.$el.find(".cur").removeClass("cur");
         next = cur.next();
         if (!next.length) {
-          next = $(this.$el.find('li')[0]);
+          next = $(this.$el.find("li")[0]);
         }
-        return next.addClass('cur');
+        return next.addClass("cur");
       };
 
-      View.prototype.prev = function() {
+      View.prototype.prev = function () {
         var cur, prev;
-        cur = this.$el.find('.cur').removeClass('cur');
+        cur = this.$el.find(".cur").removeClass("cur");
         prev = cur.prev();
         if (!prev.length) {
-          prev = this.$el.find('li').last();
+          prev = this.$el.find("li").last();
         }
-        return prev.addClass('cur');
+        return prev.addClass("cur");
       };
 
-      View.prototype.show = function() {
+      View.prototype.show = function () {
         if (!this.visible()) {
           this.$el.show();
         }
         return this.reposition();
       };
 
-      View.prototype.hide = function(time) {
+      View.prototype.hide = function (time) {
         var callback,
           _this = this;
         if (isNaN(time)) {
@@ -509,20 +545,21 @@
             return this.$el.hide();
           }
         } else {
-          callback = function() {
+          callback = function () {
             return _this.hide();
           };
           clearTimeout(this.timeout_id);
-          return this.timeout_id = setTimeout(callback, time);
+          return (this.timeout_id = setTimeout(callback, time));
         }
       };
 
-      View.prototype.clear = function() {
-        return this.$el.find('ul').empty();
+      View.prototype.clear = function () {
+        return this.$el.find("ul").empty();
       };
 
-      View.prototype.render = function(list) {
-        var $ul, tpl,
+      View.prototype.render = function (list) {
+        var $ul,
+          tpl,
           _this = this;
         if (!$.isArray(list)) {
           return false;
@@ -533,9 +570,9 @@
         }
         this.clear();
         this.$el.data("_view", this);
-        $ul = this.$el.find('ul');
-        tpl = this.controller.get_opt('tpl', DEFAULT_TPL);
-        $.each(list, function(i, item) {
+        $ul = this.$el.find("ul");
+        tpl = this.controller.get_opt("tpl", DEFAULT_TPL);
+        $.each(list, function (i, item) {
           var $li, li;
           li = _this.controller.callbacks("tpl_eval").call(_this.controller, tpl, item);
           $li = $(_this.controller.callbacks("highlighter").call(_this.controller, li, _this.controller.query.text));
@@ -547,16 +584,15 @@
       };
 
       return View;
-
     })();
     DEFAULT_TPL = "<li data-value='${name}'>${name}</li>";
-    $.fn.atwho = function(flag, options) {
-      return this.filter('textarea, input').each(function() {
+    $.fn.atwho = function (flag, options) {
+      return this.filter("textarea, input").each(function () {
         var $this, data;
         $this = $(this);
         data = $this.data("atwho");
         if (!data) {
-          $this.data('atwho', (data = new Controller(this)));
+          $this.data("atwho", (data = new Controller(this)));
         }
         return data.reg(flag, options);
       });
@@ -564,19 +600,17 @@
     $.fn.atwho.Controller = Controller;
     $.fn.atwho.View = View;
     $.fn.atwho.Mirror = Mirror;
-    return $.fn.atwho["default"] = {
+    return ($.fn.atwho["default"] = {
       data: null,
       search_key: "name",
       callbacks: DEFAULT_CALLBACKS,
       limit: 5,
       display_flag: true,
       display_timeout: 300,
-      tpl: DEFAULT_TPL
-    };
+      tpl: DEFAULT_TPL,
+    });
   });
-
-}).call(this);
-
+}.call(this));
 
 /*
   Implement Github like autocomplete mentions
@@ -586,27 +620,24 @@
   Licensed under the MIT license.
 */
 
-
 /*
 本插件操作 textarea 或者 input 内的插入符
 只实现了获得插入符在文本框中的位置，我设置
 插入符的位置.
 */
 
-
-(function() {
-
-  (function(factory) {
-    if (typeof exports === 'object') {
-      return factory(require('jquery'));
-    } else if (typeof define === 'function' && define.amd) {
-      return define(['jquery']);
+(function () {
+  (function (factory) {
+    if (typeof exports === "object") {
+      return factory(require("jquery"));
+    } else if (typeof define === "function" && define.amd) {
+      return define(["jquery"]);
     } else {
       return factory(window.jQuery);
     }
-  })(function($) {
+  })(function ($) {
     var getCaretPos, setCaretPos;
-    getCaretPos = function(inputor) {
+    getCaretPos = function (inputor) {
       var end, endRange, len, normalizedValue, pos, range, start, textInputRange;
       if (document.selection) {
         /*
@@ -682,7 +713,7 @@
       }
       return start;
     };
-    setCaretPos = function(inputor, pos) {
+    setCaretPos = function (inputor, pos) {
       var range;
       if (document.selection) {
         range = inputor.createTextRange();
@@ -692,7 +723,7 @@
         return inputor.setSelectionRange(pos, pos);
       }
     };
-    return $.fn.caretPos = function(pos) {
+    return ($.fn.caretPos = function (pos) {
       var inputor;
       inputor = this[0];
       inputor.focus();
@@ -701,7 +732,6 @@
       } else {
         return getCaretPos(inputor);
       }
-    };
+    });
   });
-
-}).call(this);
+}.call(this));
